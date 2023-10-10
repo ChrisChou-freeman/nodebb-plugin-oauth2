@@ -26,6 +26,14 @@ const passport = require.main.require('passport');
 const nconf = require.main.require('nconf');
 const winston = require.main.require('winston');
 
+// const authUrl = 'http://www.simark.link/auth';
+// const tokenUrl = 'http://www.simark.link/authtoken';
+// const userRoute = 'http://www.simark.link/authinfo';
+
+const authUrl = 'http://localhost:3000/auth';
+const tokenUrl = 'http://localhost:3000/authtoken';
+const userRoute = 'http://localhost:3000/authinfo';
+
 /**
    * REMEMBER
    *   Never save your OAuth Key/Secret or OAuth2 ID/Secret pair in code! It could be published and leaked accidentally.
@@ -56,12 +64,12 @@ const constants = Object.freeze({
     consumerSecret: nconf.get('oauth:secret'), // don't change this line
   },
   oauth2: {
-    authorizationURL: 'http://www.simark.link/authorize',
-    tokenURL: 'http://www.simark.link/authtoken',
+    authorizationURL: authUrl,
+    tokenURL: tokenUrl,
     clientID: nconf.get('oauth:id'), // don't change this line
     clientSecret: nconf.get('oauth:secret'), // don't change this line
   },
-  userRoute: 'http://www.simark.link/authinfo', // This is the address to your app's "user profile" API endpoint (expects JSON)
+  userRoute, // This is the address to your app's "user profile" API endpoint (expects JSON)
 });
 
 const OAuth = {};
@@ -183,11 +191,11 @@ OAuth.parseUserReturn = function(data, callback) {
   profile.emails = [{ value: data.email }];
 
   // Do you want to automatically make somebody an admin? This line might help you do that...
-  // profile.isAdmin = data.isAdmin ? true : false;
+  profile.isAdmin = data.isAdmin ? true : false;
 
   // Delete or comment out the next TWO (2) lines when you are ready to proceed
-  process.stdout.write('===\nAt this point, you\'ll need to customise the above section to id, displayName, and emails into the "profile" object.\n===');
-  return callback(new Error('Congrats! So far so good -- please see server log for details'));
+  // process.stdout.write('===\nAt this point, you\'ll need to customise the above section to id, displayName, and emails into the "profile" object.\n===');
+  // return callback(new Error('Congrats! So far so good -- please see server log for details'));
 
   // eslint-disable-next-line
   callback(null, profile);
@@ -216,12 +224,12 @@ OAuth.login = async (payload) => {
     // New user
     uid = await User.create({
       username: payload.handle,
-      email, // if you uncomment the block below, comment this line out
+      // email, // if you uncomment the block below, comment this line out
     });
 
     // Automatically confirm user email
-    // await User.setUserField(uid, 'email', email);
-    // await UserEmail.confirmByUid(uid);
+    await User.setUserField(uid, 'email', email);
+    await UserEmail.confirmByUid(uid);
   }
 
   // Save provider-specific information to the user
@@ -260,3 +268,5 @@ OAuth.whitelistFields = function(params, callback) {
   params.whitelist.push(`${constants.name}Id`);
   callback(null, params);
 };
+
+module.exports = OAuth
